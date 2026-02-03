@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace S10268826_Assg_1
 {
-    internal class OrderedFoodItem
+    internal class OrderedFoodItem //correct
     {
         public FoodItem FoodItem { get; set; }
         public int Quantity { get; set; }

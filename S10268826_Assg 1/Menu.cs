@@ -9,7 +9,7 @@ namespace S10268826_Assg_1
     internal class Menu
     {
         public string Menuid { get; set; }
-        public string MenuName { get; set; }
+        public string Menuname { get; set; }
 
         public Menu() { }
 
@@ -17,7 +17,7 @@ namespace S10268826_Assg_1
         public Menu(string menueID, string menuName)
         {
              Menuid = menueID;
-             menuName = menuName;
+             Menuname = menuName;
             FoodItems = new List<FoodItem>();
         }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace S10268826_Assg_1
 {
@@ -13,32 +14,36 @@ namespace S10268826_Assg_1
         public string RestaurantEmail { get; set; }
 
         public Restaurant() { }
+
+        private List<FoodItem> menus;
+        private List<SpecialOffer> specialOffers;
+        private Queue<Order> orderQueue;
         public Restaurant(string restaurantId, string restaurantName, string restaurantEmail)
         {
             RestaurantId = restaurantId;
             RestaurantName = restaurantName;
             RestaurantEmail = restaurantEmail;
-            menus = new List<Menu>();
+            menus = new List<FoodItem>();
             specialOffers = new List<SpecialOffer>();
             orderQueue = new Queue<Order>();
         }
 
-        public void AddMenu(Menu menu)
+        public void AddMenu(FoodItem menu)
         {
             menus.Add(menu);
         }
 
-        public bool RemoveMenu(Menu menu)
+        public bool RemoveMenu(FoodItem menu)
         {
             return menus.Remove(menu);
         }
 
-        public void DisplayMenus()
+        public void DisplayMenu()
         {
-            foreach (Menu menu in menus)
+            Console.WriteLine($"\nRestaurant: {RestaurantName} ({RestaurantId})");
+            foreach (FoodItem item in menus)
             {
-                Console.WriteLine(menu);
-                menu.DisplayFoodItems();
+                Console.WriteLine($" - {item}");
             }
         }
 
