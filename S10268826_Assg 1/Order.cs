@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace S10268826_Assg_1
 {
-    internal class Order //test testing 
+    internal class Order 
     {
         public int OrderId { get; set; }
         public DateTime OrderDateTime { get; set; }
