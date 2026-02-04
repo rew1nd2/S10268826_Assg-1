@@ -170,25 +170,87 @@ class Program
 
     static void LoadOrders()
     {
+        static string[] SplitOrderLine(string line)
+        {
+            // 0 OrderID
+            // 1 CustomerEmail
+            // 2 RestaurantId
+            // 3 DeliveryDate
+            // 4 DeliveryTime
+            // 5 DeliveryAddress
+            // 6 CreatedDateTime
+            // 7 TotalAmount
+            // 8 Status
+            // 9 Items (may contain commas)
+
+            string[] parts = new string[10];
+            int field = 0;
+            string current = "";
+            bool inQuotes = false;
+
+            for (int i = 0; i < line.Length; i++)
+            {
+                char ch = line[i];
+
+                if (ch == '"')
+                {
+                    inQuotes = !inQuotes; // toggle
+                }
+                else if (ch == ',' && !inQuotes && field < 9)
+                {
+                    parts[field] = current;
+                    current = "";
+                    field++;
+                }
+                else
+                {
+                    current += ch;
+                }
+            }
+
+            parts[field] = current;
+
+            // trim all
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (parts[i] != null)
+                    parts[i] = parts[i].Trim();
+                else
+                    parts[i] = "";
+            }
+
+            // remove surrounding quotes from items if any
+            if (parts[9].StartsWith("\"") && parts[9].EndsWith("\"") && parts[9].Length >= 2)
+            {
+                parts[9] = parts[9].Substring(1, parts[9].Length - 2);
+            }
+
+            return parts;
+        }
+
         string[] lines = File.ReadAllLines("orders - Copy.csv");
         int count = 0;
 
         for (int i = 1; i < lines.Length; i++) // skip header
         {
-            string[] data = lines[i].Split(',');
+            string[] data = SplitOrderLine(lines[i]);
 
             // ASSUMED CSV FORMAT (BASIC):
             // OrderID,CustomerEmail,RestaurantID,DeliveryDateTime,DeliveryAddress,TotalAmount,Status
 
-            if (data.Length >= 7)
+            if (data.Length >= 10)
             {
                 int orderId = int.Parse(data[0].Trim());
                 string customerEmail = data[1].Trim();
                 string restaurantId = data[2].Trim();
-                DateTime deliveryDT = DateTime.Parse(data[3].Trim());
-                string address = data[4].Trim();
-                double total = double.Parse(data[5].Trim());
-                string status = data[6].Trim();
+                DateTime deliveryDT = DateTime.Parse(data[3].Trim() + " " + data[4].Trim());
+                string address = data[5].Trim();
+                double total = double.Parse(data[7].Trim());
+                string status = data[8].Trim();
+
+
+
+
 
                 Customer cust = FindCustomer(customerEmail);
                 Restaurant rest = FindRestaurant(restaurantId);
