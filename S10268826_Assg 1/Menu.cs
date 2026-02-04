@@ -46,7 +46,7 @@ namespace S10268826_Assg_1
 
         public override string ToString()
         {
-            return $"{MenuName} ({Menuid})";
+            return $"{Menuname} ({Menuid})";
         }
 
         public List<FoodItem> GetFoodItems()

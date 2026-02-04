@@ -33,6 +33,10 @@ namespace S10268826_Assg_1
             orderQueue = new Queue<Order>();
         }
 
+        public void AddFoodItem(FoodItem item)
+        {
+            menus.Add(item);
+        }
         public void AddMenu(FoodItem menu)
         {
             menus.Add(menu);
