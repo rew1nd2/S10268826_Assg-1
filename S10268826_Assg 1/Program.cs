@@ -1,11 +1,13 @@
+﻿using System;
+using System.IO;
+using System.Collections.Generic;
+using S10268826_Assg_1;
 //==========================================================
 // Student Number : S10268826F
 // Student Name : Cyrus Tan
 // Partner Name : Kiefer Wang
 //==========================================================
-
 //Basic feature 1
-using S10268826_Assg_1;
 class Program
 {
     static List<Restaurant> restaurants = new List<Restaurant>();
@@ -66,7 +68,7 @@ class Program
         Console.WriteLine("0. Exit");
         Console.Write("Enter your choice: ");
     }
-        static void LoadRestaurants()
+    static void LoadRestaurants()
     {
         string[] lines = File.ReadAllLines("C:\\Users\\space\\OneDrive\\Documents\\Year 1 Sem (2)\\Programming II\\S10268826_Assg 1\\S10268826_Assg 1\\restaurants.csv");
         int count = 0;
@@ -130,11 +132,102 @@ class Program
         }
         return null;
     }
+
+    //Basic feature 2
+    static void LoadCustomers()
+    {
+        string[] lines = File.ReadAllLines("C:\\Users\\kiefe\\source\\repos\\S10268826_Assg-1\\S10268826_Assg 1\\customers.csv");
+        int count = 0;
+
+        for (int i = 1; i < lines.Length; i++) // skip header
+        {
+            string[] data = lines[i].Split(',');
+
+            if (data.Length >= 2)
+            {
+                string name = data[0].Trim();
+                string email = data[1].Trim();
+
+                if (FindCustomer(email) == null)
+                {
+                    Customer c = new Customer(name, email);
+                    customers.Add(c);
+                    count++;
+                }
+            }
+        }
+
+        Console.WriteLine($"{count} customers loaded!");
+    }
+
+    static void LoadOrders()
+    {
+        string[] lines = File.ReadAllLines("orders - Copy.csv");
+        int count = 0;
+
+        for (int i = 1; i < lines.Length; i++) // skip header
+        {
+            string[] data = lines[i].Split(',');
+
+            // ASSUMED CSV FORMAT (BASIC):
+            // OrderID,CustomerEmail,RestaurantID,DeliveryDateTime,DeliveryAddress,TotalAmount,Status
+
+            if (data.Length >= 7)
+            {
+                int orderId = int.Parse(data[0].Trim());
+                string customerEmail = data[1].Trim();
+                string restaurantId = data[2].Trim();
+                DateTime deliveryDT = DateTime.Parse(data[3].Trim());
+                string address = data[4].Trim();
+                double total = double.Parse(data[5].Trim());
+                string status = data[6].Trim();
+
+                Customer cust = FindCustomer(customerEmail);
+                Restaurant rest = FindRestaurant(restaurantId);
+
+                if (cust != null && rest != null)
+                {
+                    // Order constructor you ACTUALLY HAVE
+                    Order o = new Order(orderId);
+
+                    // set properties (basic)
+                    o.DeliveryDateTime = deliveryDT;
+                    o.DeliveryAddress = address;
+                    o.OrderTotal = total;
+                    o.OrderStatus = status;
+
+                    // add to customer + restaurant
+                    cust.AddOrder(o);
+                    rest.EnqueueOrder(o);   // ✅ CORRECT METHOD
+
+                    count++;
+                }
+            }
+        }
+
+        Console.WriteLine($"{count} orders loaded!");
+    }
+
+    static Customer FindCustomer(string email)
+    {
+        foreach (Customer c in customers)
+        {
+            if (c.EmailAddress == email)
+                return c;
+        }
+        return null;
+    }
 }
-//Basic feature 2
-//Basic feature 3
-//Basic feature 4
-//Basic feature 5
-//Basic feature 6
-//Basic feature 7
-//Basic feature 8
+
+
+
+
+
+
+
+    //Basic feature 3
+    //Basic feature 4
+    //Basic feature 5
+    //Basic feature 6
+    //Basic feature 7
+    //Basic feature 8
