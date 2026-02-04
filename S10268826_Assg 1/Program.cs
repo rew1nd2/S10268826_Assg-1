@@ -172,17 +172,6 @@ class Program
     {
         static string[] SplitOrderLine(string line)
         {
-            // 0 OrderID
-            // 1 CustomerEmail
-            // 2 RestaurantId
-            // 3 DeliveryDate
-            // 4 DeliveryTime
-            // 5 DeliveryAddress
-            // 6 CreatedDateTime
-            // 7 TotalAmount
-            // 8 Status
-            // 9 Items (may contain commas)
-
             string[] parts = new string[10];
             int field = 0;
             string current = "";
@@ -194,7 +183,7 @@ class Program
 
                 if (ch == '"')
                 {
-                    inQuotes = !inQuotes; // toggle
+                    inQuotes = !inQuotes;
                 }
                 else if (ch == ',' && !inQuotes && field < 9)
                 {
@@ -210,33 +199,56 @@ class Program
 
             parts[field] = current;
 
-            // trim all
+            // Trim spaces
             for (int i = 0; i < parts.Length; i++)
             {
-                if (parts[i] != null)
-                    parts[i] = parts[i].Trim();
-                else
+                if (parts[i] == null)
+                {
                     parts[i] = "";
+                }
+                else
+                {
+                    parts[i] = parts[i].Trim();
+                }
             }
 
-            // remove surrounding quotes from items if any
-            if (parts[9].StartsWith("\"") && parts[9].EndsWith("\"") && parts[9].Length >= 2)
+            // Remove quotes from Items (VERY basic way)
+            if (parts[9].Length > 0)
             {
-                parts[9] = parts[9].Substring(1, parts[9].Length - 2);
+                // remove first quote if exists
+                if (parts[9][0] == '"')
+                {
+                    string temp = "";
+                    for (int i = 1; i < parts[9].Length; i++)
+                    {
+                        temp += parts[9][i];
+                    }
+                    parts[9] = temp;
+                }
+
+                // remove last quote if exists
+                int lastIndex = parts[9].Length - 1;
+                if (lastIndex >= 0 && parts[9][lastIndex] == '"')
+                {
+                    string temp = "";
+                    for (int i = 0; i < lastIndex; i++)
+                    {
+                        temp += parts[9][i];
+                    }
+                    parts[9] = temp;
+                }
             }
 
             return parts;
         }
 
+
         string[] lines = File.ReadAllLines("orders - Copy.csv");
         int count = 0;
 
-        for (int i = 1; i < lines.Length; i++) // skip header
+        for (int i = 1; i < lines.Length; i++) 
         {
             string[] data = SplitOrderLine(lines[i]);
-
-            // ASSUMED CSV FORMAT (BASIC):
-            // OrderID,CustomerEmail,RestaurantID,DeliveryDateTime,DeliveryAddress,TotalAmount,Status
 
             if (data.Length >= 10)
             {
