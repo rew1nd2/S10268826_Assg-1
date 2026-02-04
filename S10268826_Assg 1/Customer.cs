@@ -43,7 +43,7 @@ namespace S10268826_Assg_1
                 Console.WriteLine(order);
             }
         }
-        public List<Order> GetPendingOrders()
+        public List<Order> GetPendingOrders() // For Feature 5 & 6 
 {
             List<Order> pendingOrders = new List<Order>();
             foreach (Order order in orders)
@@ -56,7 +56,7 @@ namespace S10268826_Assg_1
             return pendingOrders;
         }
 
-        public Order FindOrder(int orderId)
+        public Order FindOrder(int orderId) // For feature 5 & 6
         {
             foreach (Order order in orders)
             {
