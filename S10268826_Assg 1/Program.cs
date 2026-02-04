@@ -78,7 +78,7 @@ class Program
     }
     static void LoadRestaurants()
     {
-        string[] lines = File.ReadAllLines("C:\\Users\\space\\OneDrive\\Documents\\Year 1 Sem (2)\\Programming II\\S10268826_Assg 1\\S10268826_Assg 1\\restaurants.csv");
+        string[] lines = File.ReadAllLines("restaurants.csv");
         int count = 0;
 
         for (int i = 1; i < lines.Length; i++) // Skip header
@@ -96,7 +96,7 @@ class Program
 
     static void LoadFoodItems()
     {
-        string[] lines = File.ReadAllLines("C:\\Users\\space\\OneDrive\\Documents\\Year 1 Sem (2)\\Programming II\\S10268826_Assg 1\\S10268826_Assg 1\\fooditems - Copy.csv");
+        string[] lines = File.ReadAllLines("fooditems - Copy.csv");
         int count = 0;
 
         for (int i = 1; i < lines.Length; i++) // Skip header
@@ -144,7 +144,7 @@ class Program
     //Basic feature 2
     static void LoadCustomers()
     {
-        string[] lines = File.ReadAllLines("C:\\Users\\kiefe\\source\\repos\\S10268826_Assg-1\\S10268826_Assg 1\\customers.csv");
+        string[] lines = File.ReadAllLines("customers.csv");
         int count = 0;
 
         for (int i = 1; i < lines.Length; i++) // skip header
@@ -170,7 +170,7 @@ class Program
 
     static void LoadOrders()
     {
-        string[] lines = File.ReadAllLines("C:\\Users\\kiefe\\source\\repos\\S10268826_Assg-1\\S10268826_Assg 1\\orders - Copy.csv");
+        string[] lines = File.ReadAllLines("orders - Copy.csv");
         int count = 0;
 
         for (int i = 1; i < lines.Length; i++) // skip header
