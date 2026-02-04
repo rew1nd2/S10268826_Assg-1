@@ -75,7 +75,7 @@ class Program
         Console.WriteLine("6. Delete an existing order");
         Console.WriteLine("0. Exit");
         Console.Write("Enter your choice: ");
-    }s
+    }
     static void LoadRestaurants()
     {
         string[] lines = File.ReadAllLines("C:\\Users\\space\\OneDrive\\Documents\\Year 1 Sem (2)\\Programming II\\S10268826_Assg 1\\S10268826_Assg 1\\restaurants.csv");
