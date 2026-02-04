@@ -1,4 +1,9 @@
-﻿using System;
+﻿//==========================================================
+// Student Number : S10268826F
+// Student Name : Cyrus Tan
+// Partner Name : Kiefer Wang
+//==========================================================
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
@@ -20,10 +25,25 @@ namespace S10268826_Assg_1
             OfferDesc = offerDesc;
             Discount = discount;
         }
+        public double ApplyDiscount(double price)
+        {
+            if (Discount > 0)
+            {
+                return price - (price * Discount / 100);
+            }
+            return price;
+        }
 
         public override string ToString()
         {
-            return $"{OfferCode}: {OfferDesc} ({Discount}% off)";
+            if (Discount > 0)
+            {
+                return $"{OfferCode}: {OfferDesc} - {Discount}% off";
+            }
+            else
+            {
+                return $"{OfferCode}: {OfferDesc}";
+            }
         }
     }
 }

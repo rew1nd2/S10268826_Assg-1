@@ -1,4 +1,9 @@
-﻿using System;
+﻿//==========================================================
+// Student Number : S10268826F
+// Student Name : Cyrus Tan
+// Partner Name : Kiefer Wang
+//==========================================================
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace S10268826_Assg_1
 {
-    internal class OrderedFoodItem
+    internal class OrderedFoodItem //correct
     {
         public FoodItem FoodItem { get; set; }
         public int Quantity { get; set; }
