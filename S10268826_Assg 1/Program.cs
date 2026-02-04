@@ -8,6 +8,7 @@ using S10268826_Assg_1;
 // Partner Name : Kiefer Wang
 //==========================================================
 //Basic feature 1
+
 class Program
 {
     static List<Restaurant> restaurants = new List<Restaurant>();
@@ -16,9 +17,15 @@ class Program
 
     static void Main(string[] args)
     {
+        Console.WriteLine("BaseDirectory: " + AppContext.BaseDirectory);
+        Console.WriteLine("CurrentDirectory: " + Directory.GetCurrentDirectory());
+        Console.WriteLine("restaurants exists? " + File.Exists(Path.Combine(AppContext.BaseDirectory, "restaurants.csv")));
+        Console.WriteLine("fooditems exists? " + File.Exists(Path.Combine(AppContext.BaseDirectory, "fooditems - Copy.csv")));
         Console.WriteLine("Welcome to the Gruberoo Food Delivery System");
         LoadRestaurants();
         LoadFoodItems();
+        LoadCustomers();
+        LoadOrders();
         bool exit = false;
         while (!exit)
         {
@@ -31,6 +38,7 @@ class Program
                     ListAllRestaurantsAndMenuItems();
                     break;
                 case "2":
+                    LoadOrders();
                     // Feature 2
                     break;
                 case "3":
@@ -67,7 +75,7 @@ class Program
         Console.WriteLine("6. Delete an existing order");
         Console.WriteLine("0. Exit");
         Console.Write("Enter your choice: ");
-    }
+    }s
     static void LoadRestaurants()
     {
         string[] lines = File.ReadAllLines("C:\\Users\\space\\OneDrive\\Documents\\Year 1 Sem (2)\\Programming II\\S10268826_Assg 1\\S10268826_Assg 1\\restaurants.csv");
@@ -162,7 +170,7 @@ class Program
 
     static void LoadOrders()
     {
-        string[] lines = File.ReadAllLines("orders - Copy.csv");
+        string[] lines = File.ReadAllLines("C:\\Users\\kiefe\\source\\repos\\S10268826_Assg-1\\S10268826_Assg 1\\orders - Copy.csv");
         int count = 0;
 
         for (int i = 1; i < lines.Length; i++) // skip header
@@ -198,7 +206,7 @@ class Program
 
                     // add to customer + restaurant
                     cust.AddOrder(o);
-                    rest.EnqueueOrder(o);   // ✅ CORRECT METHOD
+                    rest.EnqueueOrder(o);   
 
                     count++;
                 }
