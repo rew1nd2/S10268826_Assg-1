@@ -3,11 +3,11 @@ using System.IO;
 using System.Collections.Generic;
 using S10268826_Assg_1;
 //==========================================================
-// Student Number : S10268826F
+// Student Number : S10268826F (Cyrus Tan)
+// Student Number : S10268570D (Kiefer Wang)
 // Student Name : Cyrus Tan
 // Partner Name : Kiefer Wang
 //==========================================================
-//Basic feature 1
 
 class Program
 {
@@ -17,10 +17,6 @@ class Program
 
     static void Main(string[] args)
     {
-        Console.WriteLine("BaseDirectory: " + AppContext.BaseDirectory);
-        Console.WriteLine("CurrentDirectory: " + Directory.GetCurrentDirectory());
-        Console.WriteLine("restaurants exists? " + File.Exists(Path.Combine(AppContext.BaseDirectory, "restaurants.csv")));
-        Console.WriteLine("fooditems exists? " + File.Exists(Path.Combine(AppContext.BaseDirectory, "fooditems - Copy.csv")));
         Console.WriteLine("Welcome to the Gruberoo Food Delivery System");
         LoadRestaurants();
         LoadFoodItems();
@@ -38,7 +34,7 @@ class Program
                     ListAllRestaurantsAndMenuItems();
                     break;
                 case "2":
-                    LoadOrders();
+                    ListAllOrders();
                     // Feature 2
                     break;
                 case "3":
@@ -167,129 +163,6 @@ class Program
 
         Console.WriteLine($"{count} customers loaded!");
     }
-
-    static void LoadOrders()
-    {
-        static string[] SplitOrderLine(string line)
-        {
-            string[] parts = new string[10];
-            int field = 0;
-            string current = "";
-            bool inQuotes = false;
-
-            for (int i = 0; i < line.Length; i++)
-            {
-                char ch = line[i];
-
-                if (ch == '"')
-                {
-                    inQuotes = !inQuotes;
-                }
-                else if (ch == ',' && !inQuotes && field < 9)
-                {
-                    parts[field] = current;
-                    current = "";
-                    field++;
-                }
-                else
-                {
-                    current += ch;
-                }
-            }
-
-            parts[field] = current;
-
-            // Trim spaces
-            for (int i = 0; i < parts.Length; i++)
-            {
-                if (parts[i] == null)
-                {
-                    parts[i] = "";
-                }
-                else
-                {
-                    parts[i] = parts[i].Trim();
-                }
-            }
-
-            // Remove quotes from Items (VERY basic way)
-            if (parts[9].Length > 0)
-            {
-                // remove first quote if exists
-                if (parts[9][0] == '"')
-                {
-                    string temp = "";
-                    for (int i = 1; i < parts[9].Length; i++)
-                    {
-                        temp += parts[9][i];
-                    }
-                    parts[9] = temp;
-                }
-
-                // remove last quote if exists
-                int lastIndex = parts[9].Length - 1;
-                if (lastIndex >= 0 && parts[9][lastIndex] == '"')
-                {
-                    string temp = "";
-                    for (int i = 0; i < lastIndex; i++)
-                    {
-                        temp += parts[9][i];
-                    }
-                    parts[9] = temp;
-                }
-            }
-
-            return parts;
-        }
-
-
-        string[] lines = File.ReadAllLines("orders - Copy.csv");
-        int count = 0;
-
-        for (int i = 1; i < lines.Length; i++) 
-        {
-            string[] data = SplitOrderLine(lines[i]);
-
-            if (data.Length >= 10)
-            {
-                int orderId = int.Parse(data[0].Trim());
-                string customerEmail = data[1].Trim();
-                string restaurantId = data[2].Trim();
-                DateTime deliveryDT = DateTime.Parse(data[3].Trim() + " " + data[4].Trim());
-                string address = data[5].Trim();
-                double total = double.Parse(data[7].Trim());
-                string status = data[8].Trim();
-
-
-
-
-
-                Customer cust = FindCustomer(customerEmail);
-                Restaurant rest = FindRestaurant(restaurantId);
-
-                if (cust != null && rest != null)
-                {
-                    // Order constructor you ACTUALLY HAVE
-                    Order o = new Order(orderId);
-
-                    // set properties (basic)
-                    o.DeliveryDateTime = deliveryDT;
-                    o.DeliveryAddress = address;
-                    o.OrderTotal = total;
-                    o.OrderStatus = status;
-
-                    // add to customer + restaurant
-                    cust.AddOrder(o);
-                    rest.EnqueueOrder(o);   
-
-                    count++;
-                }
-            }
-        }
-
-        Console.WriteLine($"{count} orders loaded!");
-    }
-
     static Customer FindCustomer(string email)
     {
         foreach (Customer c in customers)
@@ -299,13 +172,95 @@ class Program
         }
         return null;
     }
+
+    static void LoadOrders()
+    {
+        string[] lines = File.ReadAllLines("orders - Copy.csv");
+        int count = 0;
+
+        for (int i = 1; i < lines.Length; i++) // Skip header
+        {
+            string line = lines[i];
+            string[] data = line.Split(',');
+
+            if (data.Length >= 9)
+            {
+                int orderId = int.Parse(data[0]);
+                string customerEmail = data[1];
+                string restaurantId = data[2];
+                string deliveryDate = data[3];
+                string deliveryTime = data[4];
+                string deliveryAddress = data[5];
+                double totalAmount = double.Parse(data[7]);
+                string status = data[8];
+
+                // Find the customer and restaurant
+                Customer customer = FindCustomer(customerEmail);
+                Restaurant restaurant = FindRestaurant(restaurantId);
+
+                if (customer != null && restaurant != null)
+                {
+                    // Create order
+                    Order order = new Order(orderId);
+
+                    // Parse the delivery date/time
+                    string[] dateParts = deliveryDate.Split('/');
+                    string[] timeParts = deliveryTime.Split(':');
+                    int day = int.Parse(dateParts[0]);
+                    int month = int.Parse(dateParts[1]);
+                    int year = int.Parse(dateParts[2]);
+                    int hour = int.Parse(timeParts[0]);
+                    int minute = int.Parse(timeParts[1]);
+
+                    order.DeliveryDateTime = new DateTime(year, month, day, hour, minute, 0);
+                    order.DeliveryAddress = deliveryAddress;
+                    order.OrderTotal = totalAmount;
+                    order.OrderStatus = status;
+
+                    // Add order to customer and restaurant
+                    customer.AddOrder(order);
+                    restaurant.EnqueueOrder(order);
+                    count++;
+                }
+            }
+        }
+
+        Console.WriteLine($"{count} orders loaded!");
+    }
+    static void ListAllOrders()
+    {
+        Console.WriteLine("\nAll Orders");
+        Console.WriteLine("==========");
+        Console.WriteLine($"{"Order ID",-10} {"Customer",-15} {"Restaurant",-20} {"Delivery Date/Time",-20} {"Amount",-10} {"Status",-12}");
+        Console.WriteLine("-----------------------------------------------------------------------------------------------");
+
+        // Get all orders from all customers
+        foreach (Customer customer in customers)
+        {
+            foreach (Order order in customer.GetOrders())
+            {
+                // Find which restaurant this order belongs to
+                Restaurant rest = null;
+                foreach (Restaurant r in restaurants)
+                {
+                    foreach (Order o in r.GetOrderQueue())
+                    {
+                        if (o.OrderId == order.OrderId)
+                        {
+                            rest = r;
+                            break;
+                        }
+                    }
+                    if (rest != null) break;
+                }
+
+                string restaurantName = rest != null ? rest.RestaurantName : "Unknown";
+
+                Console.WriteLine($"{order.OrderId,-10} {customer.CustomerName,-15} {restaurantName,-20} {order.DeliveryDateTime:dd/MM/yyyy HH:mm} ${order.OrderTotal,-9:F2} {order.OrderStatus,-12}");
+            }
+        }
+    }
 }
-
-
-
-
-
-
 
     //Basic feature 3
     //Basic feature 4
