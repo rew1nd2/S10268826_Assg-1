@@ -45,9 +45,11 @@ class Program
                     ProcessOrder();
                     break;
                 case "5":
+                    ModifyExistingOrder();
                     // Feature 5
                     break;
                 case "6":
+                    DeleteOrder();
                     // Feature 6
                     break;
                 case "0":
@@ -615,6 +617,300 @@ class Program
         }
         return null;
     }
+    //Feature 7
+    static void ModifyExistingOrder()
+    {
+        Console.WriteLine("\nModify Order");
+        Console.WriteLine("===========");
+
+        // prompt customer email
+        Customer customer = null;
+        while (customer == null)
+        {
+            Console.Write("Enter Customer Email: ");
+            string email = Console.ReadLine().Trim();
+            customer = FindCustomer(email);
+
+            if (customer == null)
+                Console.WriteLine("Customer not found.");
+        }
+
+        // display pending orders
+        List<Order> pendingOrders = customer.GetPendingOrders();
+
+        Console.WriteLine("Pending Orders:");
+        if (pendingOrders.Count == 0)
+        {
+            Console.WriteLine("None");
+            return;
+        }
+
+        foreach (Order o in pendingOrders)
+            Console.WriteLine(o.OrderId);
+
+        // enter order id
+        Order selectedOrder = null;
+        while (selectedOrder == null)
+        {
+            Console.Write("Enter Order ID: ");
+            int oid;
+            if (!int.TryParse(Console.ReadLine(), out oid))
+            {
+                Console.WriteLine("Invalid Order ID.");
+                continue;
+            }
+
+            selectedOrder = customer.FindOrder(oid);
+
+            if (selectedOrder == null)
+            {
+                Console.WriteLine("Order not found.");
+            }
+            else if (selectedOrder.OrderStatus != "Pending")
+            {
+                Console.WriteLine("Only Pending orders can be modified.");
+                selectedOrder = null;
+            }
+        }
+
+        // display order info (match screenshot)
+        Console.WriteLine("Order Items:");
+        List<OrderedFoodItem> orderedItems = selectedOrder.GetOrderedItems();
+        for (int i = 0; i < orderedItems.Count; i++)
+        {
+            Console.WriteLine($"{i + 1}. {orderedItems[i].FoodItem.ItemName} - {orderedItems[i].Quantity}");
+        }
+
+        Console.WriteLine("Address:");
+        Console.WriteLine(selectedOrder.DeliveryAddress);
+
+        Console.WriteLine("Delivery Date/Time:");
+        Console.WriteLine($"{selectedOrder.DeliveryDateTime:dd/M/yyyy}, {selectedOrder.DeliveryDateTime:HH:mm}");
+        Console.WriteLine();
+
+        // modification options
+        Console.Write("Modify: [1] Items [2] Address [3] Delivery Time: ");
+        int choice;
+        while (!int.TryParse(Console.ReadLine(), out choice) || choice < 1 || choice > 3)
+        {
+            Console.Write("Modify: [1] Items [2] Address [3] Delivery Time: ");
+        }
+
+        double oldTotal = selectedOrder.OrderTotal;
+
+        if (choice == 1)
+        {
+            ModifyItems(selectedOrder);
+            double newTotal = CalculateTotal(selectedOrder);
+
+            // if increase, prompt payment
+            if (newTotal > oldTotal)
+            {
+                Console.WriteLine($"Order total increased from ${oldTotal:F2} to ${newTotal:F2}");
+                Console.Write("Proceed to payment? [Y/N]: ");
+                if (Console.ReadLine().Trim().ToUpper() != "Y")
+                {
+                    Console.WriteLine("Payment not made. Item changes not confirmed.");
+                    return;
+                }
+
+                Console.Write("[CC] Credit Card / [PP] PayPal / [CD] Cash on Delivery: ");
+                string pm = Console.ReadLine().Trim().ToUpper();
+                while (pm != "CC" && pm != "PP" && pm != "CD")
+                {
+                    Console.Write("[CC] Credit Card / [PP] PayPal / [CD] Cash on Delivery: ");
+                    pm = Console.ReadLine().Trim().ToUpper();
+                }
+
+            }
+
+            selectedOrder.OrderTotal = newTotal;
+
+            Console.WriteLine($"Order {selectedOrder.OrderId} updated. New Total: ${selectedOrder.OrderTotal:F2}");
+            UpdateOrdersCsvAfterModify(customer, selectedOrder);
+        }
+        else if (choice == 2)
+        {
+            Console.Write("Enter new Delivery Address: ");
+            string newAddr = Console.ReadLine();
+            selectedOrder.DeliveryAddress = newAddr;
+
+            Console.WriteLine($"Order {selectedOrder.OrderId} updated. New Address: {selectedOrder.DeliveryAddress}");
+            UpdateOrdersCsvAfterModify(customer, selectedOrder);
+        }
+        else // choice == 3
+        {
+            // only change time part
+            DateTime newDT = selectedOrder.DeliveryDateTime;
+
+            while (true)
+            {
+                Console.Write("Enter new Delivery Time (hh:mm): ");
+                string timeStr = Console.ReadLine().Trim();
+
+                try
+                {
+                    DateTime temp = DateTime.Parse("01/01/2000 " + timeStr);
+
+                    newDT = new DateTime(
+                        selectedOrder.DeliveryDateTime.Year,
+                        selectedOrder.DeliveryDateTime.Month,
+                        selectedOrder.DeliveryDateTime.Day,
+                        temp.Hour,
+                        temp.Minute,
+                        0
+                    );
+                    break;
+                }
+                catch
+                {
+                    Console.WriteLine("Invalid time. Example: 14:00");
+                }
+            }
+
+            selectedOrder.DeliveryDateTime = newDT;
+
+            Console.WriteLine($"Order {selectedOrder.OrderId} updated. New Delivery Time: {selectedOrder.DeliveryDateTime:HH:mm}");
+            UpdateOrdersCsvAfterModify(customer, selectedOrder);
+        }
+    }
+
+    static void ModifyItems(Order order)
+    {
+        // Simple PRG2 style:
+        // Choose existing item number, change qty, or 0 to stop.
+        // (This matches “basic features” and is easy to demo.)
+
+        while (true)
+        {
+            Console.WriteLine("\nOrder Items:");
+            List<OrderedFoodItem> items = order.GetOrderedItems();
+            for (int i = 0; i < items.Count; i++)
+            {
+                Console.WriteLine($"{i + 1}. {items[i].FoodItem.ItemName} - {items[i].Quantity}");
+            }
+
+            Console.Write("Enter item number to change quantity (0 to finish): ");
+            int num;
+            if (!int.TryParse(Console.ReadLine(), out num))
+            {
+                Console.WriteLine("Invalid number.");
+                continue;
+            }
+
+            if (num == 0) break;
+
+            if (num < 1 || num > items.Count)
+            {
+                Console.WriteLine("Invalid item number.");
+                continue;
+            }
+
+            Console.Write("Enter new quantity: ");
+            int newQty;
+            if (!int.TryParse(Console.ReadLine(), out newQty) || newQty <= 0)
+            {
+                Console.WriteLine("Invalid quantity.");
+                continue;
+            }
+
+            items[num - 1].Quantity = newQty;
+            Console.WriteLine("Quantity updated.");
+        }
+    }
+
+    static double CalculateTotal(Order order)
+    {
+        double total = 0;
+        foreach (OrderedFoodItem item in order.GetOrderedItems())
+        {
+            total += item.FoodItem.ItemPrice * item.Quantity;
+        }
+        total += 5.0; // delivery fee (same as your create)
+        return total;
+    }
+
+    static Restaurant FindRestaurantByOrderId(int orderId)
+    {
+        foreach (Restaurant r in restaurants)
+        {
+            foreach (Order o in r.GetOrderQueue())
+            {
+                if (o.OrderId == orderId)
+                    return r;
+            }
+        }
+        return null;
+    }
+
+    // Update orders 
+    static void UpdateOrdersCsvAfterModify(Customer customer, Order order)
+    {
+        string filePath = "orders - Copy.csv";
+        if (!File.Exists(filePath)) return;
+
+        Restaurant rest = FindRestaurantByOrderId(order.OrderId);
+        if (rest == null) return;
+
+        string[] lines = File.ReadAllLines(filePath);
+        List<string> newLines = new List<string>();
+
+        // build items field like your loader expects: "Name,Qty|Name,Qty"
+        string itemsField = "";
+        List<OrderedFoodItem> items = order.GetOrderedItems();
+        for (int i = 0; i < items.Count; i++)
+        {
+            itemsField += items[i].FoodItem.ItemName + "," + items[i].Quantity;
+            if (i < items.Count - 1) itemsField += "|";
+        }
+        itemsField = "\"" + itemsField + "\"";
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            // keep header
+            if (i == 0)
+            {
+                newLines.Add(lines[i]);
+                continue;
+            }
+
+            string[] data = SplitCSVLine(lines[i]);
+            if (data.Length < 10)
+            {
+                newLines.Add(lines[i]);
+                continue;
+            }
+
+            int oid;
+            if (int.TryParse(data[0], out oid) && oid == order.OrderId)
+            {
+                // rebuild line with same columns layout (at least first 10)
+                string deliveryDate = order.DeliveryDateTime.ToString("dd/MM/yyyy");
+                string deliveryTime = order.DeliveryDateTime.ToString("HH:mm");
+
+                string newLine =
+                    order.OrderId + "," +
+                    customer.EmailAddress + "," +
+                    rest.RestaurantId + "," +
+                    deliveryDate + "," +
+                    deliveryTime + "," +
+                    order.DeliveryAddress + "," +
+                    data[6] + "," +                     
+                    order.OrderTotal.ToString("F2") + "," +
+                    order.OrderStatus + "," +
+                    itemsField;
+
+                newLines.Add(newLine);
+            }
+            else
+            {
+                newLines.Add(lines[i]);
+            }
+        }
+
+        File.WriteAllLines(filePath, newLines.ToArray());
+    }
+
     //==========================================================
     // FEATURE 6: Delete an existing order
     //==========================================================
