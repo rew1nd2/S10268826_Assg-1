@@ -97,6 +97,11 @@ namespace S10268826_Assg_1
             return menus;
         }
 
+        public List<SpecialOffer> GetSpecialOffers()
+        {
+            return specialOffers;
+        }
+
 
     }
 }
