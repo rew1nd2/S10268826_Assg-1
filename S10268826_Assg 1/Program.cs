@@ -1018,6 +1018,8 @@ class Program
             // Add to refund stack
             refundStack.Push(selectedOrder);
 
+            UpdateOrdersCsvAfterModify(customer, selectedOrder);
+
             // Display confirmation
             Console.WriteLine($"\nOrder {selectedOrder.OrderId} cancelled. Refund of ${selectedOrder.OrderTotal:F2} processed.");
         }
