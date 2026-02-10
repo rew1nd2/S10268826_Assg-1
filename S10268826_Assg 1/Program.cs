@@ -3,10 +3,10 @@ using System.IO;
 using System.Collections.Generic;
 using S10268826_Assg_1;
 //==========================================================
-// Student Number : S10268826F (Cyrus Tan)
 // Student Number : S10268570D (Kiefer Wang)
-// Student Name : Cyrus Tan
+// Student Number : S10268826F (Cyrus Tan)
 // Partner Name : Kiefer Wang
+// Student Name : Cyrus Tan
 //==========================================================
 
 class Program

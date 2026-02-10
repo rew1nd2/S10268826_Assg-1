@@ -1,7 +1,7 @@
 ﻿//==========================================================
-// Student Number : S10268826F
-// Student Name : Cyrus Tan
-// Partner Name : Kiefer Wang
+// Student Number : S10268570D
+// Student Name : Kiefer Wang
+// Partner Name : Cyrus Tan
 //==========================================================
 using System;
 using System.Collections.Generic;
