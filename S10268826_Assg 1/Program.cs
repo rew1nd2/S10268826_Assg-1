@@ -55,6 +55,14 @@ class Program
                 case "7":
                     BulkProcessPendingOrders(); // Advanced
                     break;
+                case "8":
+                    DisplayTotalOrderAmount();  // Advanced
+                    break;
+                case "9":
+                    FavouriteOrdersMenu();     //Advacned
+                    break;
+
+
                 case "0":
                     exit = true;
                     Console.WriteLine("\nThank you for using Gruberoo!");
@@ -76,6 +84,8 @@ class Program
         Console.WriteLine("5. Modify an existing order");
         Console.WriteLine("6. Delete an existing order");
         Console.WriteLine("7. Bulk process pending orders");
+        Console.WriteLine("8. Display total order amount");
+        Console.WriteLine("9. Favourite orders");
         Console.WriteLine("0. Exit");
         Console.Write("Enter your choice: ");
     }
@@ -1101,8 +1111,406 @@ class Program
             Console.WriteLine("Percentage of automatically processed orders: 0.00%");
         }
     }
+    //advanced featre B
+    static void DisplayTotalOrderAmount()
+    {
+        Console.WriteLine("\nDisplay Total Order Amount");
+        Console.WriteLine("==========================");
+
+        double totalOrderAmount = 0;  // delivered revenue (minus delivery fee)
+        double totalRefunds = 0;      // refunded amount (from refundStack)
+
+        // 1) For each restaurant, sum delivered orders (minus delivery fee per order)
+        foreach (Restaurant r in restaurants)
+        {
+            foreach (Order o in r.GetOrderQueue())
+            {
+                if (o.OrderStatus == "Delivered")
+                {
+                    // Your total includes delivery fee, so subtract $5 per delivered order
+                    totalOrderAmount += (o.OrderTotal - 5.0);
+                }
+            }
+        }
+
+        // 2) Sum refunded orders from refundStack (do NOT pop)
+        foreach (Order o in refundStack)
+        {
+            totalRefunds += o.OrderTotal;
+        }
+
+        // 3) Final amount Gruberoo earns
+        double finalAmount = totalOrderAmount - totalRefunds;
+
+        Console.WriteLine($"Total order amount (less delivery fee): ${totalOrderAmount:F2}");
+        Console.WriteLine($"Total refunds: ${totalRefunds:F2}");
+        Console.WriteLine($"Final amount Gruberoo earns: ${finalAmount:F2}");
+    }
+
+    //advanced feature C
+    static void FavouriteOrdersMenu()
+    {
+        Console.WriteLine("\nFavourite Orders");
+        Console.WriteLine("===============");
+
+        Console.WriteLine("1. Add favourite order");
+        Console.WriteLine("2. View favourite orders");
+        Console.WriteLine("3. Reorder from favourite");
+        Console.WriteLine("0. Back");
+        Console.Write("Enter choice: ");
+        string choice = Console.ReadLine();
+
+        if (choice == "1") AddFavouriteOrder();
+        else if (choice == "2") ViewFavouriteOrdersDetailed();
+        else if (choice == "3") ReorderFromFavourite();
+    }
+
+    static void ViewFavouriteOrdersDetailed()
+    {
+        Customer customer = null;
+        while (customer == null)
+        {
+            Console.Write("Enter Customer Email: ");
+            string email = Console.ReadLine().Trim();
+            customer = FindCustomer(email);
+            if (customer == null) Console.WriteLine("Customer not found.");
+        }
+
+        if (!File.Exists("favourites.csv"))
+        {
+            Console.WriteLine("No favourites found yet.");
+            return;
+        }
+
+        string[] lines = File.ReadAllLines("favourites.csv");
+        bool any = false;
+
+        Console.WriteLine("Favourite Orders:");
+
+        foreach (string line in lines)
+        {
+            string[] parts = line.Split(',');
+            if (parts.Length >= 2 && parts[0].Trim() == customer.EmailAddress)
+            {
+                int oid;
+                if (int.TryParse(parts[1].Trim(), out oid))
+                {
+                    Order favOrder = customer.FindOrder(oid);
+                    if (favOrder != null)
+                    {
+                        Console.WriteLine("\nOrder ID: " + favOrder.OrderId);
+                        Console.WriteLine("Items:");
+                        int n = 1;
+                        foreach (OrderedFoodItem item in favOrder.GetOrderedItems())
+                        {
+                            Console.WriteLine(n + ". " + item.FoodItem.ItemName + " - " + item.Quantity);
+                            n++;
+                        }
+                        Console.WriteLine("Total: $" + favOrder.OrderTotal.ToString("F2"));
+                        any = true;
+                    }
+                }
+            }
+        }
+
+        if (!any) Console.WriteLine("None");
+    }
+
+    static void ReorderFromFavourite()
+    {
+        Customer customer = null;
+        while (customer == null)
+        {
+            Console.Write("Enter Customer Email: ");
+            string email = Console.ReadLine().Trim();
+            customer = FindCustomer(email);
+            if (customer == null) Console.WriteLine("Customer not found.");
+        }
+
+        if (!File.Exists("favourites.csv"))
+        {
+            Console.WriteLine("No favourites found yet.");
+            return;
+        }
+
+        // show favourites (order ids)
+        string[] lines = File.ReadAllLines("favourites.csv");
+        List<int> favIds = new List<int>();
+
+        foreach (string line in lines)
+        {
+            string[] parts = line.Split(',');
+            if (parts.Length >= 2 && parts[0].Trim() == customer.EmailAddress)
+            {
+                int oid;
+                if (int.TryParse(parts[1].Trim(), out oid))
+                    favIds.Add(oid);
+            }
+        }
+
+        if (favIds.Count == 0)
+        {
+            Console.WriteLine("No favourites found.");
+            return;
+        }
+
+        Console.WriteLine("Favourite Orders:");
+        foreach (int id in favIds) Console.WriteLine(id);
+
+        Console.Write("Enter Favourite Order ID to reorder: ");
+        int favOid;
+        while (!int.TryParse(Console.ReadLine(), out favOid))
+        {
+            Console.Write("Enter Favourite Order ID to reorder: ");
+        }
+
+        Order oldOrder = customer.FindOrder(favOid);
+        if (oldOrder == null)
+        {
+            Console.WriteLine("Order not found.");
+            return;
+        }
+
+        // Need restaurant for this order (based on your CSV lookup)
+        Restaurant rest = FindRestaurantByOrderId(oldOrder.OrderId);
+        if (rest == null)
+        {
+            Console.WriteLine("Restaurant not found for this order.");
+            return;
+        }
+
+        // new delivery info
+        Console.Write("Enter new Delivery Address: ");
+        string newAddr = Console.ReadLine();
+
+        DateTime newDT;
+        while (true)
+        {
+            try
+            {
+                Console.Write("Enter Delivery Date (dd/mm/yyyy): ");
+                string d = Console.ReadLine();
+                Console.Write("Enter Delivery Time (hh:mm): ");
+                string t = Console.ReadLine();
+                newDT = DateTime.Parse(d + " " + t);
+                break;
+            }
+            catch
+            {
+                Console.WriteLine("Invalid date/time.");
+            }
+        }
+        static int GetNextOrderIdSimple()
+        {
+            int maxId = 0;
+
+            foreach (Customer c in customers)
+            {
+                foreach (Order o in c.GetOrders())
+                {
+                    if (o.OrderId > maxId)
+                        maxId = o.OrderId;
+                }
+            }
+
+            return maxId + 1;
+        }
+
+        static void AppendOrderToCsv(Customer customer, Restaurant rest, Order order)
+        {
+            // Build items field: "Name,Qty|Name,Qty"
+            string itemsField = "";
+            List<OrderedFoodItem> items = order.GetOrderedItems();
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                itemsField += items[i].FoodItem.ItemName + "," + items[i].Quantity;
+                if (i < items.Count - 1)
+                    itemsField += "|";
+            }
+
+            itemsField = "\"" + itemsField + "\"";
+
+            string line =
+                order.OrderId + "," +
+                customer.EmailAddress + "," +
+                rest.RestaurantId + "," +
+                order.DeliveryDateTime.ToString("dd/MM/yyyy") + "," +
+                order.DeliveryDateTime.ToString("HH:mm") + "," +
+                order.DeliveryAddress + "," +
+                DateTime.Now.ToString() + "," +
+                order.OrderTotal.ToString("F2") + "," +
+                order.OrderStatus + "," +
+                itemsField;
+
+            File.AppendAllText("orders - Copy.csv", line + "\n");
+        }
 
 
+
+        // create new order id (simple scan)
+        int newId = GetNextOrderIdSimple();
+
+        Order newOrder = new Order(newId);
+        newOrder.DeliveryAddress = newAddr;
+        newOrder.DeliveryDateTime = newDT;
+        newOrder.OrderStatus = "Pending";
+
+        // copy items
+        foreach (OrderedFoodItem item in oldOrder.GetOrderedItems())
+        {
+            OrderedFoodItem copy = new OrderedFoodItem(item.FoodItem, item.Quantity);
+            newOrder.AddOrderedFoodItem(copy);
+        }
+
+        // compute total again
+        newOrder.OrderTotal = CalculateTotal(newOrder);
+
+        // add to lists/queue
+        customer.AddOrder(newOrder);
+        rest.EnqueueOrder(newOrder);
+
+        // append to orders CSV with items
+        AppendOrderToCsv(customer, rest, newOrder);
+
+        Console.WriteLine("Reorder successful! New Order ID: " + newOrder.OrderId);
+        Console.WriteLine("Status: Pending");
+    }
+
+    //advanced feature C
+    static void AddFavouriteOrder()
+    {
+        Customer customer = null;
+        while (customer == null)
+        {
+            Console.Write("Enter Customer Email: ");
+            string email = Console.ReadLine().Trim();
+            customer = FindCustomer(email);
+
+            if (customer == null)
+                Console.WriteLine("Customer not found.");
+        }
+
+        // Show delivered orders only
+        List<Order> delivered = new List<Order>();
+        foreach (Order o in customer.GetOrders())
+        {
+            if (o.OrderStatus == "Delivered")
+                delivered.Add(o);
+        }
+
+        if (delivered.Count == 0)
+        {
+            Console.WriteLine("No Delivered orders to favourite.");
+            return;
+        }
+
+        Console.WriteLine("Delivered Orders:");
+        foreach (Order o in delivered)
+            Console.WriteLine(o.OrderId);
+
+        Console.Write("Enter Order ID to favourite: ");
+        int oid;
+        while (!int.TryParse(Console.ReadLine(), out oid))
+        {
+            Console.Write("Enter Order ID to favourite: ");
+        }
+
+        bool found = false;
+        foreach (Order o in delivered)
+        {
+            if (o.OrderId == oid)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            Console.WriteLine("That Order ID is not in your Delivered orders.");
+            return;
+        }
+
+        if (IsFavourite(customer.EmailAddress, oid))
+        {
+            Console.WriteLine("This order is already in favourites.");
+            return;
+        }
+
+        File.AppendAllText("favourites.csv", customer.EmailAddress + "," + oid + "\n");
+        Console.WriteLine("Favourite saved!");
+    }
+
+    static void ViewFavouriteOrders()
+    {
+        Customer customer = null;
+        while (customer == null)
+        {
+            Console.Write("Enter Customer Email: ");
+            string email = Console.ReadLine().Trim();
+            customer = FindCustomer(email);
+
+            if (customer == null)
+                Console.WriteLine("Customer not found.");
+        }
+
+        if (!File.Exists("favourites.csv"))
+        {
+            Console.WriteLine("No favourites found yet.");
+            return;
+        }
+
+        string[] lines = File.ReadAllLines("favourites.csv");
+        Console.WriteLine("Favourite Orders:");
+
+        bool any = false;
+
+        foreach (string line in lines)
+        {
+            string[] parts = line.Split(',');
+            if (parts.Length >= 2)
+            {
+                string email = parts[0].Trim();
+                int oid;
+
+                if (email == customer.EmailAddress && int.TryParse(parts[1].Trim(), out oid))
+                {
+                    Console.WriteLine(oid);
+                    any = true;
+                }
+            }
+        }
+
+        if (!any)
+            Console.WriteLine("None");
+    }
+
+    static bool IsFavourite(string email, int orderId)
+    {
+        if (!File.Exists("favourites.csv"))
+            return false;
+
+        string[] lines = File.ReadAllLines("favourites.csv");
+        foreach (string line in lines)
+        {
+            string[] parts = line.Split(',');
+            if (parts.Length >= 2)
+            {
+                if (parts[0].Trim() == email)
+                {
+                    int oid;
+                    if (int.TryParse(parts[1].Trim(), out oid) && oid == orderId)
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
 
 }
+
+
+
+
 
