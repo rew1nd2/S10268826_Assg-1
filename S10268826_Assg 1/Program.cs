@@ -50,7 +50,10 @@ class Program
                     break;
                 case "6":
                     DeleteOrder();
-                    // Feature 6
+                    break;
+                // Feature 6
+                case "7":
+                    BulkProcessPendingOrders(); // Advanced
                     break;
                 case "0":
                     exit = true;
@@ -72,6 +75,7 @@ class Program
         Console.WriteLine("4. Process an order");
         Console.WriteLine("5. Modify an existing order");
         Console.WriteLine("6. Delete an existing order");
+        Console.WriteLine("7. Bulk process pending orders");
         Console.WriteLine("0. Exit");
         Console.Write("Enter your choice: ");
     }
@@ -1010,12 +1014,95 @@ class Program
         }
     }
 
+    //==========================================================
+    // ADVANCED FEATURE (a): Bulk processing of unprocessed orders
+    //==========================================================
+
+    static void BulkProcessPendingOrders()
+    {
+        Console.WriteLine("\nBulk Process Pending Orders");
+        Console.WriteLine("============================");
+
+        // Identify all orders with status "Pending" from all restaurants
+        List<Order> allPendingOrders = new List<Order>();
+
+        foreach (Restaurant restaurant in restaurants)
+        {
+            Queue<Order> queue = restaurant.GetOrderQueue();
+            foreach (Order order in queue)
+            {
+                if (order.OrderStatus == "Pending")
+                {
+                    allPendingOrders.Add(order);
+                }
+            }
+        }
+
+        // Display total number of pending orders
+        Console.WriteLine($"Total Pending Orders: {allPendingOrders.Count}");
+
+        if (allPendingOrders.Count == 0)
+        {
+            Console.WriteLine("No pending orders to process.");
+            return;
+        }
+
+        // Counters for statistics
+        int processedCount = 0;
+        int preparingCount = 0;
+        int rejectedCount = 0;
+
+        // Process each pending order
+        foreach (Order order in allPendingOrders)
+        {
+            // Calculate time until delivery
+            TimeSpan timeUntilDelivery = order.DeliveryDateTime - DateTime.Now;
+            double hoursUntilDelivery = timeUntilDelivery.TotalHours;
+
+            if (hoursUntilDelivery < 1)
+            {
+                // Reject if delivery time is less than 1 hour
+                order.UpdateStatus("Rejected");
+                refundStack.Push(order);
+                rejectedCount++;
+                Console.WriteLine($"Order {order.OrderId}: REJECTED (delivery time < 1 hour)");
+            }
+            else
+            {
+                // Set to Preparing otherwise
+                order.UpdateStatus("Preparing");
+                preparingCount++;
+                Console.WriteLine($"Order {order.OrderId}: PREPARING");
+            }
+
+            processedCount++;
+        }
+
+        // Calculate total orders (from all customers)
+        int totalOrders = 0;
+        foreach (Customer customer in customers)
+        {
+            totalOrders += customer.GetOrders().Count;
+        }
+
+        // Display summary statistics
+        Console.WriteLine("\n===== Summary Statistics =====");
+        Console.WriteLine($"Number of orders processed: {processedCount}");
+        Console.WriteLine($"Orders set to Preparing: {preparingCount}");
+        Console.WriteLine($"Orders set to Rejected: {rejectedCount}");
+
+        if (totalOrders > 0)
+        {
+            double percentage = (double)processedCount / totalOrders * 100;
+            Console.WriteLine($"Percentage of automatically processed orders: {percentage:F2}%");
+        }
+        else
+        {
+            Console.WriteLine("Percentage of automatically processed orders: 0.00%");
+        }
+    }
+
+
 
 }
 
-//Basic feature 3
-//Basic feature 4
-//Basic feature 5
-//Basic feature 6
-//Basic feature 7
-//Basic feature 8
