@@ -19,8 +19,6 @@ namespace S10268826_Assg_1
         public string OrderStatus { get; set; }
         public DateTime DeliveryDateTime { get; set; }
         public string DeliveryAddress { get; set; }
-        public string OrderPaymentMethod { get; set; }
-        public string OrderShippingMethod { get; set; }
         public string PaymentMethod { get; set; }
         public string SpecialRequest { get; set; }
 
@@ -76,6 +74,31 @@ namespace S10268826_Assg_1
         public List<OrderedFoodItem> GetOrderedItems()
         {
             return orderedFoodItems;
+        }
+
+        public void UpdateStatus(string newStatus)
+        {
+            OrderStatus = newStatus;
+        }
+
+        public void UpdateDeliveryTime(DateTime newDateTime)
+        {
+            DeliveryDateTime = newDateTime;
+        }
+
+        public void UpdateDeliveryAddress(string newAddress)
+        {
+            DeliveryAddress = newAddress;
+        }
+
+        public bool CanModify()
+        {
+            return OrderStatus == "Pending";
+        }
+
+        public bool CanCancel()
+        {
+            return OrderStatus == "Pending";
         }
     }
 }

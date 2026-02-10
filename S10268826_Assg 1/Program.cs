@@ -42,7 +42,7 @@ class Program
                     //Feature 3
                     break;
                 case "4":
-                    // Feature 4
+                    ProcessOrder();
                     break;
                 case "5":
                     // Feature 5
@@ -179,12 +179,14 @@ class Program
         string[] lines = File.ReadAllLines("orders - Copy.csv");
         int count = 0;
 
-        for (int i = 1; i < lines.Length; i++) // Skip header
+        for (int i = 1; i < lines.Length; i++)
         {
             string line = lines[i];
-            string[] data = line.Split(',');
 
-            if (data.Length >= 9)
+            // Split carefully - items field has commas inside quotes
+            string[] data = SplitCSVLine(line);
+
+            if (data.Length >= 10)
             {
                 int orderId = int.Parse(data[0]);
                 string customerEmail = data[1];
@@ -194,17 +196,16 @@ class Program
                 string deliveryAddress = data[5];
                 double totalAmount = double.Parse(data[7]);
                 string status = data[8];
+                string itemsStr = data[9]; // ← THE ITEMS FIELD
 
-                // Find the customer and restaurant
                 Customer customer = FindCustomer(customerEmail);
                 Restaurant restaurant = FindRestaurant(restaurantId);
 
                 if (customer != null && restaurant != null)
                 {
-                    // Create order
                     Order order = new Order(orderId);
 
-                    // Parse the delivery date/time
+                    // Parse delivery date/time
                     string[] dateParts = deliveryDate.Split('/');
                     string[] timeParts = deliveryTime.Split(':');
                     int day = int.Parse(dateParts[0]);
@@ -218,7 +219,9 @@ class Program
                     order.OrderTotal = totalAmount;
                     order.OrderStatus = status;
 
-                    // Add order to customer and restaurant
+                    // ✅ ADD THIS: Parse and add the ordered items
+                    ParseAndAddOrderItems(order, restaurant, itemsStr);
+
                     customer.AddOrder(order);
                     restaurant.EnqueueOrder(order);
                     count++;
@@ -227,6 +230,78 @@ class Program
         }
 
         Console.WriteLine($"{count} orders loaded!");
+    }
+
+    // Helper to split CSV line (handles quotes)
+    static string[] SplitCSVLine(string line)
+    {
+        List<string> result = new List<string>();
+        bool inQuotes = false;
+        string current = "";
+
+        for (int i = 0; i < line.Length; i++)
+        {
+            char c = line[i];
+
+            if (c == '"')
+            {
+                inQuotes = !inQuotes;
+            }
+            else if (c == ',' && !inQuotes)
+            {
+                result.Add(current.Trim());
+                current = "";
+            }
+            else
+            {
+                current += c;
+            }
+        }
+        result.Add(current.Trim());
+
+        return result.ToArray();
+    }
+
+    // Helper to parse items and add to order
+    static void ParseAndAddOrderItems(Order order, Restaurant restaurant, string itemsStr)
+    {
+        // Remove quotes
+        itemsStr = itemsStr.Trim('"');
+
+        if (string.IsNullOrEmpty(itemsStr))
+            return;
+
+        // Split by | to get each item
+        string[] items = itemsStr.Split('|');
+
+        foreach (string item in items)
+        {
+            // Split by comma to get name and quantity
+            string[] parts = item.Split(',');
+
+            if (parts.Length >= 2)
+            {
+                string itemName = parts[0].Trim();
+                int quantity = int.Parse(parts[1].Trim());
+
+                // Find the food item in restaurant's menu
+                FoodItem foodItem = null;
+                foreach (FoodItem f in restaurant.GetMenus())
+                {
+                    if (f.ItemName == itemName)
+                    {
+                        foodItem = f;
+                        break;
+                    }
+                }
+
+                if (foodItem != null)
+                {
+                    OrderedFoodItem orderedItem = new OrderedFoodItem(foodItem, quantity);
+                    order.AddOrderedFoodItem(orderedItem);
+                }
+            }
+        }
     }
     static void ListAllOrders()
     {
@@ -411,6 +486,232 @@ class Program
         File.AppendAllText("orders - Copy.csv", line + "\n");
 
         Console.WriteLine($"Order {order.OrderId} created successfully! Status: Pending");
+    }
+
+    //==========================================================
+    // FEATURE 4: Process an order
+    //==========================================================
+
+    static void ProcessOrder()
+    {
+        Console.WriteLine("\nProcess Order");
+        Console.WriteLine("=============");
+
+        // Get restaurant ID
+        Restaurant restaurant = null;
+        while (restaurant == null)
+        {
+            Console.Write("Enter Restaurant ID: ");
+            string rid = Console.ReadLine();
+            restaurant = FindRestaurant(rid);
+
+            if (restaurant == null)
+                Console.WriteLine("Restaurant not found. Please try again.");
+        }
+
+        // Get the order queue
+        Queue<Order> orderQueue = restaurant.GetOrderQueue();
+
+        if (orderQueue.Count == 0)
+        {
+            Console.WriteLine("No orders in queue for this restaurant.");
+            return;
+        }
+
+        // Process each order in the queue
+        // We need to convert queue to list to iterate without removing
+        List<Order> ordersList = new List<Order>(orderQueue);
+
+        foreach (Order order in ordersList)
+        {
+            // Display order details
+            Console.WriteLine($"\nOrder {order.OrderId}:");
+            Console.WriteLine($"Customer: {FindCustomerByOrder(order).CustomerName}");
+            Console.WriteLine("Ordered Items:");
+
+            int itemNum = 1;
+            foreach (OrderedFoodItem item in order.GetOrderedItems())
+            {
+                Console.WriteLine($"{itemNum}. {item.FoodItem.ItemName} - {item.Quantity}");
+                itemNum++;
+            }
+
+            Console.WriteLine($"Delivery date/time: {order.DeliveryDateTime:dd/MM/yyyy HH:mm}");
+            Console.WriteLine($"Total Amount: ${order.OrderTotal:F2}");
+            Console.WriteLine($"Order Status: {order.OrderStatus}");
+
+            // Get action
+            Console.Write("[C]onfirm / [R]eject / [S]kip / [D]eliver: ");
+            string action = Console.ReadLine().ToUpper();
+
+            // Process based on action
+            if (action == "C")
+            {
+                if (order.OrderStatus == "Pending")
+                {
+                    order.UpdateStatus("Preparing");
+                    Console.WriteLine($"Order {order.OrderId} confirmed. Status: Preparing");
+                }
+                else
+                {
+                    Console.WriteLine($"Cannot confirm. Order status is {order.OrderStatus}. Only Pending orders can be confirmed.");
+                }
+            }
+            else if (action == "R")
+            {
+                if (order.OrderStatus == "Pending")
+                {
+                    order.UpdateStatus("Rejected");
+                    refundStack.Push(order);
+                    Console.WriteLine($"Order {order.OrderId} rejected. Refund of ${order.OrderTotal:F2} processed.");
+                }
+                else
+                {
+                    Console.WriteLine($"Cannot reject. Order status is {order.OrderStatus}. Only Pending orders can be rejected.");
+                }
+            }
+            else if (action == "S")
+            {
+                if (order.OrderStatus == "Cancelled")
+                {
+                    Console.WriteLine("Order skipped.");
+                }
+                else
+                {
+                    Console.WriteLine($"Cannot skip. Order status is {order.OrderStatus}. Only Cancelled orders can be skipped.");
+                }
+            }
+            else if (action == "D")
+            {
+                if (order.OrderStatus == "Preparing")
+                {
+                    order.UpdateStatus("Delivered");
+                    Console.WriteLine($"Order {order.OrderId} delivered.");
+                }
+                else
+                {
+                    Console.WriteLine($"Cannot deliver. Order status is {order.OrderStatus}. Only Preparing orders can be delivered.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid action. Skipping this order.");
+            }
+        }
+
+        Console.WriteLine("\nAll orders processed.");
+    }
+
+    // Helper method to find customer by order
+    static Customer FindCustomerByOrder(Order order)
+    {
+        foreach (Customer c in customers)
+        {
+            foreach (Order o in c.GetOrders())
+            {
+                if (o.OrderId == order.OrderId)
+                    return c;
+            }
+        }
+        return null;
+    }
+    //==========================================================
+    // FEATURE 6: Delete an existing order
+    //==========================================================
+
+    static void DeleteOrder()
+    {
+        Console.WriteLine("\nDelete Order");
+        Console.WriteLine("============");
+
+        // Get customer email
+        Customer customer = null;
+        while (customer == null)
+        {
+            Console.Write("Enter Customer Email: ");
+            string email = Console.ReadLine();
+            customer = FindCustomer(email);
+
+            if (customer == null)
+                Console.WriteLine("Customer not found. Please try again.");
+        }
+
+        // Get pending orders
+        List<Order> pendingOrders = customer.GetPendingOrders();
+
+        if (pendingOrders.Count == 0)
+        {
+            Console.WriteLine("No pending orders found for this customer.");
+            return;
+        }
+
+        // Display pending order IDs
+        Console.WriteLine("Pending Orders:");
+        foreach (Order o in pendingOrders)
+        {
+            Console.WriteLine(o.OrderId);
+        }
+
+        // Get order ID
+        Order selectedOrder = null;
+        while (selectedOrder == null)
+        {
+            Console.Write("Enter Order ID: ");
+            int orderId;
+
+            if (!int.TryParse(Console.ReadLine(), out orderId))
+            {
+                Console.WriteLine("Invalid Order ID. Please enter a number.");
+                continue;
+            }
+
+            selectedOrder = customer.FindOrder(orderId);
+
+            if (selectedOrder == null)
+            {
+                Console.WriteLine("Order not found.");
+            }
+            else if (selectedOrder.OrderStatus != "Pending")
+            {
+                Console.WriteLine("Only pending orders can be cancelled.");
+                selectedOrder = null;
+            }
+        }
+
+        // Display order details
+        Console.WriteLine($"\nCustomer: {customer.CustomerName}");
+        Console.WriteLine("Ordered Items:");
+
+        int itemNum = 1;
+        foreach (OrderedFoodItem item in selectedOrder.GetOrderedItems())
+        {
+            Console.WriteLine($"{itemNum}. {item.FoodItem.ItemName} - {item.Quantity}");
+            itemNum++;
+        }
+
+        Console.WriteLine($"Delivery date/time: {selectedOrder.DeliveryDateTime:dd/MM/yyyy HH:mm}");
+        Console.WriteLine($"Total Amount: ${selectedOrder.OrderTotal:F2}");
+        Console.WriteLine($"Order Status: {selectedOrder.OrderStatus}");
+
+        // Confirm deletion
+        Console.Write("\nConfirm deletion? [Y/N]: ");
+        string confirm = Console.ReadLine().ToUpper();
+
+        if (confirm == "Y")
+        {
+            // Update order status to Cancelled
+            selectedOrder.UpdateStatus("Cancelled");
+
+            // Add to refund stack
+            refundStack.Push(selectedOrder);
+
+            // Display confirmation
+            Console.WriteLine($"\nOrder {selectedOrder.OrderId} cancelled. Refund of ${selectedOrder.OrderTotal:F2} processed.");
+        }
+        else
+        {
+            Console.WriteLine("Deletion cancelled.");
+        }
     }
 
 
