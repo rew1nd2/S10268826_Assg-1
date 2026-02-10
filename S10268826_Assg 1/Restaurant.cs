@@ -92,6 +92,11 @@ namespace S10268826_Assg_1
             return $"{RestaurantName} ({RestaurantId})";
         }
 
+        public List<FoodItem> GetMenus()
+        {
+            return menus;
+        }
+
 
     }
 }
