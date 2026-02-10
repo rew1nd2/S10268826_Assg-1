@@ -1018,6 +1018,8 @@ class Program
             // Add to refund stack
             refundStack.Push(selectedOrder);
 
+            UpdateOrdersCsvAfterModify(customer, selectedOrder);
+
             // Display confirmation
             Console.WriteLine($"\nOrder {selectedOrder.OrderId} cancelled. Refund of ${selectedOrder.OrderTotal:F2} processed.");
         }
@@ -1715,7 +1717,7 @@ class Program
         SaveStack();
         Console.WriteLine("queue.csv and stack.csv saved!");
     }
-
+    // save queue
     static void SaveQueue()
     {
         List<string> lines = new List<string>();
@@ -1745,7 +1747,7 @@ class Program
 
         File.WriteAllLines("queue.csv", lines);
     }
-
+    // save stack
     static void SaveStack()
     {
         List<string> lines = new List<string>();
